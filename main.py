@@ -44,13 +44,25 @@ class RVO2Demo:
         self.root.title("RVO2避障演示")
         self.canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg=BG_COLOR, highlightthickness=0)
         self.canvas.pack()
+        self.canvas.bind("<Button-1>", self.handle_canvas_click)
 
         self.status = tk.StringVar(value="暂停")
+        self.add_mode = tk.StringVar(value="")
+        self.show_velocity = tk.BooleanVar(value=True)
         control_frame = tk.Frame(root)
         control_frame.pack(fill=tk.X, padx=8, pady=6)
         self.start_button = tk.Button(control_frame, text="开始", command=self.toggle)
         self.start_button.pack(side=tk.LEFT)
         tk.Button(control_frame, text="重置", command=self.reset).pack(side=tk.LEFT, padx=6)
+        tk.Button(control_frame, text="添加Agent", command=self.set_add_agent).pack(side=tk.LEFT, padx=6)
+        tk.Button(control_frame, text="添加障碍物", command=self.set_add_obstacle).pack(side=tk.LEFT)
+        tk.Button(control_frame, text="取消添加", command=self.clear_add_mode).pack(side=tk.LEFT, padx=6)
+        tk.Checkbutton(
+            control_frame,
+            text="显示速度",
+            variable=self.show_velocity,
+            command=self.update_velocity_visibility,
+        ).pack(side=tk.LEFT)
         tk.Label(control_frame, textvariable=self.status).pack(side=tk.LEFT, padx=12)
 
         self.running = False
@@ -60,8 +72,10 @@ class RVO2Demo:
             Obstacle(WIDTH * 0.25, HEIGHT * 0.35, 35),
             Obstacle(WIDTH * 0.75, HEIGHT * 0.65, 35),
         ]
+        self.obstacle_shapes = []
         self.agents = []
         self.agent_shapes = []
+        self.velocity_shapes = []
         self.goal_shapes = []
         self.reset()
         self.root.after(int(1000 / FPS), self.update)
@@ -74,11 +88,13 @@ class RVO2Demo:
     def reset(self) -> None:
         self.agents = []
         self.canvas.delete("all")
+        self.obstacle_shapes = []
         self.agent_shapes = []
+        self.velocity_shapes = []
         self.goal_shapes = []
 
         for obstacle in self.obstacles:
-            self.canvas.create_oval(
+            shape = self.canvas.create_oval(
                 obstacle.x - obstacle.radius,
                 obstacle.y - obstacle.radius,
                 obstacle.x + obstacle.radius,
@@ -86,6 +102,7 @@ class RVO2Demo:
                 fill=OBSTACLE_COLOR,
                 outline="",
             )
+            self.obstacle_shapes.append(shape)
 
         for _ in range(18):
             x, y = self.random_position()
@@ -101,6 +118,16 @@ class RVO2Demo:
                 outline="",
             )
             self.agent_shapes.append(shape)
+            velocity_shape = self.canvas.create_line(
+                x,
+                y,
+                x + 1,
+                y,
+                fill=GOAL_COLOR,
+                arrow=tk.LAST,
+                width=2,
+            )
+            self.velocity_shapes.append(velocity_shape)
             goal_shape = self.canvas.create_oval(
                 goal_x - 4,
                 goal_y - 4,
@@ -114,6 +141,79 @@ class RVO2Demo:
         self.running = False
         self.status.set("暂停")
         self.start_button.config(text="开始")
+        self.update_velocity_visibility()
+
+    def set_add_agent(self) -> None:
+        self.add_mode.set("agent")
+
+    def set_add_obstacle(self) -> None:
+        self.add_mode.set("obstacle")
+
+    def clear_add_mode(self) -> None:
+        self.add_mode.set("")
+
+    def update_velocity_visibility(self) -> None:
+        state = "normal" if self.show_velocity.get() else "hidden"
+        for shape in self.velocity_shapes:
+            self.canvas.itemconfigure(shape, state=state)
+
+    def handle_canvas_click(self, event: tk.Event) -> None:
+        mode = self.add_mode.get()
+        if mode == "agent":
+            self.add_agent(float(event.x), float(event.y))
+        elif mode == "obstacle":
+            self.add_obstacle(float(event.x), float(event.y))
+
+    def add_agent(self, x: float, y: float) -> None:
+        if self.is_inside_obstacle(x, y, AGENT_RADIUS + 4):
+            return
+        goal_x, goal_y = self.random_position(avoid=(x, y))
+        agent = Agent(x=x, y=y, vx=0.0, vy=0.0, goal_x=goal_x, goal_y=goal_y)
+        self.agents.append(agent)
+        shape = self.canvas.create_oval(
+            x - agent.radius,
+            y - agent.radius,
+            x + agent.radius,
+            y + agent.radius,
+            fill=AGENT_COLOR,
+            outline="",
+        )
+        self.agent_shapes.append(shape)
+        velocity_shape = self.canvas.create_line(
+            x,
+            y,
+            x + 1,
+            y,
+            fill=GOAL_COLOR,
+            arrow=tk.LAST,
+            width=2,
+        )
+        self.velocity_shapes.append(velocity_shape)
+        goal_shape = self.canvas.create_oval(
+            goal_x - 4,
+            goal_y - 4,
+            goal_x + 4,
+            goal_y + 4,
+            outline=GOAL_COLOR,
+            width=2,
+        )
+        self.goal_shapes.append(goal_shape)
+        self.update_velocity_visibility()
+
+    def add_obstacle(self, x: float, y: float) -> None:
+        if self.is_inside_obstacle(x, y, 10):
+            return
+        obstacle = Obstacle(x=x, y=y, radius=35)
+        self.obstacles.append(obstacle)
+        shape = self.canvas.create_oval(
+            obstacle.x - obstacle.radius,
+            obstacle.y - obstacle.radius,
+            obstacle.x + obstacle.radius,
+            obstacle.y + obstacle.radius,
+            fill=OBSTACLE_COLOR,
+            outline="",
+        )
+        self.obstacle_shapes.append(shape)
 
     def random_position(self, avoid=None) -> tuple[float, float]:
         while True:
@@ -206,6 +306,26 @@ class RVO2Demo:
                 agent.x + agent.radius,
                 agent.y + agent.radius,
             )
+            speed = math.hypot(agent.vx, agent.vy)
+            if speed > 1e-3:
+                arrow_len = 0.35 * AGENT_MAX_SPEED
+                arrow_dx = (agent.vx / speed) * arrow_len
+                arrow_dy = (agent.vy / speed) * arrow_len
+                self.canvas.coords(
+                    self.velocity_shapes[idx],
+                    agent.x,
+                    agent.y,
+                    agent.x + arrow_dx,
+                    agent.y + arrow_dy,
+                )
+            else:
+                self.canvas.coords(
+                    self.velocity_shapes[idx],
+                    agent.x,
+                    agent.y,
+                    agent.x + 1,
+                    agent.y,
+                )
 
 
 if __name__ == "__main__":

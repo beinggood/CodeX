@@ -62,7 +62,6 @@ class RVO2Demo:
         ]
         self.agents = []
         self.agent_shapes = []
-        self.velocity_shapes = []
         self.goal_shapes = []
         self.reset()
         self.root.after(int(1000 / FPS), self.update)
@@ -76,7 +75,6 @@ class RVO2Demo:
         self.agents = []
         self.canvas.delete("all")
         self.agent_shapes = []
-        self.velocity_shapes = []
         self.goal_shapes = []
 
         for obstacle in self.obstacles:
@@ -103,16 +101,6 @@ class RVO2Demo:
                 outline="",
             )
             self.agent_shapes.append(shape)
-            velocity_shape = self.canvas.create_line(
-                x,
-                y,
-                x + 1,
-                y,
-                fill=GOAL_COLOR,
-                arrow=tk.LAST,
-                width=2,
-            )
-            self.velocity_shapes.append(velocity_shape)
             goal_shape = self.canvas.create_oval(
                 goal_x - 4,
                 goal_y - 4,
@@ -218,26 +206,6 @@ class RVO2Demo:
                 agent.x + agent.radius,
                 agent.y + agent.radius,
             )
-            speed = math.hypot(agent.vx, agent.vy)
-            if speed > 1e-3:
-                arrow_len = 0.35 * AGENT_MAX_SPEED
-                arrow_dx = (agent.vx / speed) * arrow_len
-                arrow_dy = (agent.vy / speed) * arrow_len
-                self.canvas.coords(
-                    self.velocity_shapes[idx],
-                    agent.x,
-                    agent.y,
-                    agent.x + arrow_dx,
-                    agent.y + arrow_dy,
-                )
-            else:
-                self.canvas.coords(
-                    self.velocity_shapes[idx],
-                    agent.x,
-                    agent.y,
-                    agent.x + 1,
-                    agent.y,
-                )
 
 
 if __name__ == "__main__":

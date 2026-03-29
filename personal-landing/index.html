@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>个人网站起始页</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
+    <div class="cursor-glow" aria-hidden="true"></div>
+
+    <header class="top-nav glass">
+      <div class="brand">YourName</div>
+      <nav>
+        <a href="#about">关于</a>
+        <a href="#work">作品</a>
+        <a href="#contact">联系</a>
+      </nav>
+      <button id="themeToggle" class="theme-btn" aria-label="切换主题">🌙</button>
+    </header>
+
+    <main>
+      <section class="hero" id="about">
+        <p class="badge">PERSONAL SITE</p>
+        <h1>
+          你好，我是 <span class="gradient-text">创作者</span><br />
+          <span id="typedText"></span>
+        </h1>
+        <p class="subtitle">
+          我专注于把想法变成体验：简洁、现代、有温度。这个起始页可直接作为个人网站模板使用。
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#work">查看作品</a>
+          <a class="btn ghost" href="#contact">联系我</a>
+        </div>
+      </section>
+
+      <section class="cards" id="work">
+        <article class="card glass tilt">
+          <h3>UI/UX 设计</h3>
+          <p>注重层次感与动效节奏，打造高辨识度视觉风格。</p>
+        </article>
+        <article class="card glass tilt">
+          <h3>前端开发</h3>
+          <p>响应式布局、微交互与性能优化并重，适配多端。</p>
+        </article>
+        <article class="card glass tilt">
+          <h3>品牌表达</h3>
+          <p>用简洁而有张力的语言，建立个人品牌与信任感。</p>
+        </article>
+      </section>
+
+      <section class="contact glass" id="contact">
+        <h2>让我们一起做点酷的事</h2>
+        <p>hello@example.com</p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
